@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+
 import '../../auth/services/token_storage.dart';
 import '../../auth/screens/mobile_input_screen.dart';
+
 import '../services/portfolio_api.dart';
 import 'portfolio_list_screen.dart';
 import 'portfolio_insights_screen.dart';
 import 'fixed_income_maturity_screen.dart';
+
+import '../../accounts/screens/connected_accounts_screen.dart';
+import '../../notifications/screens/notifications_screen.dart';
+import '../../notifications/services/notifications_api.dart';
+import '../../shared/widgets/notification_badge.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -18,6 +25,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late Future<Map<String, dynamic>> _summary;
   late Future<List<dynamic>> _maturities;
   late Future<List<dynamic>> _recommendations;
+  late Future<int> _unreadCount;
 
   @override
   void initState() {
@@ -28,16 +36,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _refreshAll() {
     _summary = PortfolioApi.getSummary();
     _maturities = PortfolioApi.getMaturities();
-    _recommendations = PortfolioApi.getRecommendations(); // ✅ NEW
+    _recommendations = PortfolioApi.getRecommendations();
+    _unreadCount = NotificationsApi.getUnreadCount();
   }
 
   Future<void> _logout() async {
     await TokenStorage.clearToken();
     if (!mounted) return;
+
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-          builder: (_) => const MobileInputScreen()),
+        builder: (_) => const MobileInputScreen(),
+      ),
       (_) => false,
     );
   }
@@ -54,6 +65,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('My Portfolio'),
         actions: [
+          /// 🔔 NOTIFICATIONS WITH UNREAD BADGE (V2.2)
+          FutureBuilder<int>(
+            future: _unreadCount,
+            builder: (context, snapshot) {
+              final count = snapshot.data ?? 0;
+
+              return NotificationBadge(
+                count: count,
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          const NotificationsScreen(),
+                    ),
+                  );
+
+                  // refresh unread badge on return
+                  setState(() {
+                    _unreadCount =
+                        NotificationsApi.getUnreadCount();
+                  });
+                },
+              );
+            },
+          ),
+
+          /// 🔗 CONNECTED ACCOUNTS
+          IconButton(
+            icon: const Icon(Icons.link),
+            tooltip: 'Connected Accounts',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const ConnectedAccountsScreen(),
+                ),
+              );
+            },
+          ),
+
+          /// 📊 RISK & DIVERSIFICATION
           IconButton(
             icon: const Icon(Icons.insights),
             tooltip: 'Risk & Diversification',
@@ -67,6 +121,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               );
             },
           ),
+
+          /// 📅 FD MATURITIES
           IconButton(
             icon: const Icon(Icons.event),
             tooltip: 'FD Maturities',
@@ -80,28 +136,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
               );
             },
           ),
+
+          /// 🔄 REFRESH
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
               setState(_refreshAll);
             },
           ),
+
+          /// 🚪 LOGOUT
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _logout,
           ),
         ],
       ),
+
       body: Column(
         children: [
-          /// 🔹 UPCOMING FD MATURITIES (NEXT 30 DAYS)
+          /// 🔹 UPCOMING FD MATURITIES
           FutureBuilder<List<dynamic>>(
             future: _maturities,
             builder: (context, snapshot) {
-              if (!snapshot.hasData) return const SizedBox();
+              if (!snapshot.hasData) {
+                return const SizedBox();
+              }
 
               final dueSoon = _dueSoon(snapshot.data!);
-              if (dueSoon.isEmpty) return const SizedBox();
+              if (dueSoon.isEmpty) {
+                return const SizedBox();
+              }
 
               return Card(
                 margin:
@@ -158,7 +223,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
 
-          /// 🔹 ACTIONABLE RECOMMENDATIONS (PREMIUM)
+          /// 🔹 ACTIONABLE RECOMMENDATIONS
           FutureBuilder<List<dynamic>>(
             future: _recommendations,
             builder: (context, snapshot) {
@@ -194,7 +259,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 : Colors.orange,
                           ),
                           title: Text(r['action']),
-                          subtitle: Text(r['recommendation']),
+                          subtitle:
+                              Text(r['recommendation']),
                         ),
                       ),
                     ],
@@ -204,7 +270,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
 
-          /// 🔹 BACKEND SUMMARY
+          /// 🔹 SUMMARY
           FutureBuilder<Map<String, dynamic>>(
             future: _summary,
             builder: (context, snapshot) {
@@ -216,26 +282,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 );
               }
 
-              if (snapshot.hasError) {
-                return Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    'Error loading portfolio: ${snapshot.error}',
-                    style:
-                        const TextStyle(color: Colors.red),
-                  ),
-                );
-              }
-
               if (!snapshot.hasData) {
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('No summary data'),
-                );
+                return const SizedBox();
               }
 
               final s = snapshot.data!;
-
               return Card(
                 margin: const EdgeInsets.all(16),
                 child: Padding(
@@ -285,6 +336,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 }
+
+
 
 
 
