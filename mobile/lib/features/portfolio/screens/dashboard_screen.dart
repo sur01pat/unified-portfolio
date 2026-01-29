@@ -9,6 +9,7 @@ import 'portfolio_insights_screen.dart';
 import 'fixed_income_maturity_screen.dart';
 
 import '../../accounts/screens/connected_accounts_screen.dart';
+import '../../integrations/screens/connected_providers_screen.dart'; // ✅ V3.3
 import '../../notifications/screens/notifications_screen.dart';
 import '../../notifications/services/notifications_api.dart';
 import '../../shared/widgets/notification_badge.dart';
@@ -65,7 +66,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('My Portfolio'),
         actions: [
-          /// 🔔 NOTIFICATIONS WITH UNREAD BADGE (V2.2)
+          /// 🔔 NOTIFICATIONS (V2.2)
           FutureBuilder<int>(
             future: _unreadCount,
             builder: (context, snapshot) {
@@ -82,7 +83,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   );
 
-                  // refresh unread badge on return
                   setState(() {
                     _unreadCount =
                         NotificationsApi.getUnreadCount();
@@ -92,7 +92,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
 
-          /// 🔗 CONNECTED ACCOUNTS
+          /// 🔗 CONNECTED PROVIDERS (V3.3)
+          IconButton(
+            icon: const Icon(Icons.hub),
+            tooltip: 'Connected Providers',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const ConnectedProvidersScreen(),
+                ),
+              );
+            },
+          ),
+
+          /// 🔗 CONNECTED ACCOUNTS (V2.1)
           IconButton(
             icon: const Icon(Icons.link),
             tooltip: 'Connected Accounts',
@@ -159,14 +174,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           FutureBuilder<List<dynamic>>(
             future: _maturities,
             builder: (context, snapshot) {
-              if (!snapshot.hasData) {
-                return const SizedBox();
-              }
+              if (!snapshot.hasData) return const SizedBox();
 
               final dueSoon = _dueSoon(snapshot.data!);
-              if (dueSoon.isEmpty) {
-                return const SizedBox();
-              }
+              if (dueSoon.isEmpty) return const SizedBox();
 
               return Card(
                 margin:
