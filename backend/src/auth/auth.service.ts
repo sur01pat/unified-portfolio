@@ -17,7 +17,6 @@ export class AuthService {
       attempts: 0,
     });
 
-    // 🔔 TEMP: log OTP (replace with SMS provider)
     console.log(`OTP for ${mobileNumber}: ${otp}`);
 
     return { success: true };
@@ -47,9 +46,14 @@ export class AuthService {
 
     otpStore.delete(mobileNumber);
 
-    // ✅ Issue JWT
+    // ✅ NORMALIZE USER ID (THIS IS THE FIX)
+    const normalizedUserId = mobileNumber.startsWith('+')
+      ? mobileNumber
+      : `+${mobileNumber}`;
+
+    // ✅ Issue JWT with normalized userId
     const token = this.jwtService.sign({
-      sub: mobileNumber,
+      sub: normalizedUserId,
     });
 
     return {

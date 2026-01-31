@@ -1,16 +1,15 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../../../config/api_config.dart';
 import '../../auth/services/token_storage.dart';
 
 class NotificationsApi {
-  static const String baseUrl = 'http://localhost:3000';
-
   /// GET all notifications
   static Future<List<dynamic>> getNotifications() async {
     final token = await TokenStorage.getToken();
 
     final response = await http.get(
-      Uri.parse('$baseUrl/v2/notifications'),
+      Uri.parse('${ApiConfig.baseUrl}/v2/notifications'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -28,7 +27,7 @@ class NotificationsApi {
     final token = await TokenStorage.getToken();
 
     final response = await http.post(
-      Uri.parse('$baseUrl/v2/notifications/$id/read'),
+      Uri.parse('${ApiConfig.baseUrl}/v2/notifications/$id/read'),
       headers: {
         'Authorization': 'Bearer $token',
       },
@@ -38,10 +37,10 @@ class NotificationsApi {
       throw Exception('Failed to mark notification as read');
     }
   }
-  //--
-  static Future<int> getUnreadCount() async {
-  final items = await getNotifications();
-  return items.where((n) => n['read'] == false).length;
-}
 
+  /// GET unread count
+  static Future<int> getUnreadCount() async {
+    final items = await getNotifications();
+    return items.where((n) => n['read'] == false).length;
+  }
 }

@@ -10,12 +10,13 @@ async function bootstrap() {
     .setTitle('Unified Portfolio API')
     .setDescription('Authentication & Portfolio APIs')
     .setVersion('1.0')
-    .addBearerAuth() // for future JWT-secured APIs
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(3000);
+  // 🔥 THIS IS THE FIX (bind to all interfaces)
+  await app.listen(3000, '0.0.0.0');
 }
 bootstrap();
