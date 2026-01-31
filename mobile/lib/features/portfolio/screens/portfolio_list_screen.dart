@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/asset.dart'; // includes AssetSource
 import '../services/portfolio_api.dart';
 import 'add_asset_screen.dart';
+import '../../../widgets/insights_row.dart';
 
 class PortfolioListScreen extends StatefulWidget {
   final VoidCallback onChanged;
@@ -10,8 +11,7 @@ class PortfolioListScreen extends StatefulWidget {
   const PortfolioListScreen({super.key, required this.onChanged});
 
   @override
-  State<PortfolioListScreen> createState() =>
-      _PortfolioListScreenState();
+  State<PortfolioListScreen> createState() => _PortfolioListScreenState();
 }
 
 class _PortfolioListScreenState extends State<PortfolioListScreen> {
@@ -20,6 +20,18 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
   DateTime _lastUpdated = DateTime.now();
 
   Asset? _lastDeleted;
+
+  // TEMP: stubbed recommendations (wire API later)
+  final List<Map<String, dynamic>> _recommendations = [
+    {
+      'title': 'Rebalance equity allocation',
+      'description': 'Equity exposure is above target allocation.',
+    },
+    {
+      'title': 'FD maturing soon',
+      'description': 'One fixed deposit matures in the next 30 days.',
+    },
+  ];
 
   @override
   void initState() {
@@ -76,11 +88,7 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
 
     return Tooltip(
       message: reason,
-      child: const Icon(
-        Icons.lock,
-        size: 16,
-        color: Colors.grey,
-      ),
+      child: const Icon(Icons.lock, size: 16, color: Colors.grey),
     );
   }
 
@@ -138,22 +146,13 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
     return grouped;
   }
 
-  double _assetValue(Asset a) =>
-      a.quantity * a.purchasePrice;
+  double _assetValue(Asset a) => a.quantity * a.purchasePrice;
 
-  double _sectionTotal(List<Asset> assets) {
-    return assets.fold(
-      0,
-      (sum, a) => sum + _assetValue(a),
-    );
-  }
+  double _sectionTotal(List<Asset> assets) =>
+      assets.fold(0.0, (sum, a) => sum + _assetValue(a));
 
-  double _portfolioTotal(List<Asset> assets) {
-    return assets.fold(
-      0,
-      (sum, a) => sum + _assetValue(a),
-    );
-  }
+  double _portfolioTotal(List<Asset> assets) =>
+      assets.fold(0.0, (sum, a) => sum + _assetValue(a));
 
   String _typeLabel(String type) {
     switch (type) {
@@ -200,7 +199,37 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
       ),
     );
   }
+//--
+ void _showInsightsBottomSheet() {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (_) {
+      return SafeArea(
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // ❌ No title here — avoid duplication
+            ..._recommendations.map(
+              (r) => Card(
+                child: ListTile(
+                  leading: const Icon(Icons.trending_up),
+                  title: Text(r['title'] ?? 'Insight'),
+                  subtitle: Text(r['description'] ?? ''),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
 
+//----
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -214,27 +243,15 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
             padding: const EdgeInsets.all(8),
             child: Text(
               'Last updated: ${_lastUpdated.toLocal().toString().substring(11, 19)}',
-              style:
-                  const TextStyle(fontSize: 12, color: Colors.grey),
+              style: const TextStyle(fontSize: 12, color: Colors.grey),
             ),
           ),
           Expanded(
             child: FutureBuilder<List<Asset>>(
               future: _assets,
               builder: (context, snapshot) {
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      'Error: ${snapshot.error}',
-                      style:
-                          const TextStyle(color: Colors.red),
-                    ),
-                  );
-                }
-
                 if (!snapshot.hasData) {
-                  return const Center(
-                      child: CircularProgressIndicator());
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 final assets = snapshot.data!;
@@ -242,126 +259,110 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
                   return const Center(child: Text('No assets'));
                 }
 
-                final totalPortfolio =
-                    _portfolioTotal(assets);
+                final totalPortfolio = _portfolioTotal(assets);
                 final grouped = _groupByType(assets);
 
                 return ListView(
-                  children: grouped.entries.map((entry) {
-                    final sectionValue =
-                        _sectionTotal(entry.value);
-                    final percentage =
-                        totalPortfolio == 0
-                            ? 0
-                            : (sectionValue /
-                                    totalPortfolio *
-                                    100);
+                  children: [
+                    // 🔹 ASSETS FIRST
+                    ...grouped.entries.map((entry) {
+                      final sectionValue = _sectionTotal(entry.value);
+                      final double percentage = totalPortfolio == 0
+                          ? 0.0
+                          : (sectionValue / totalPortfolio * 100).toDouble();
 
-                    return Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
-                          child: Column(
-                            crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment
-                                        .spaceBetween,
-                                children: [
-                                  Text(
-                                    _typeLabel(entry.key),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight:
-                                          FontWeight.bold,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 16, vertical: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      _typeLabel(entry.key),
+                                      style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold),
                                     ),
-                                  ),
-                                  Text(
-                                    '₹${sectionValue.toStringAsFixed(0)} '
-                                    '(${percentage.toStringAsFixed(0)}%)',
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight:
-                                          FontWeight.w600,
+                                    Text(
+                                      '₹${sectionValue.toStringAsFixed(0)} '
+                                      '(${percentage.toStringAsFixed(0)}%)',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w600),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              _percentageBar(
-                                percentage.toDouble(),
-                                _typeColor(entry.key),
-                              ),
-                            ],
-                          ),
-                        ),
-                        ...entry.value.map((a) {
-                          final invested = _assetValue(a);
-
-                          final tile = Card(
-                            margin:
-                                const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 4),
-                            child: ListTile(
-                              title: Text(a.name),
-                              subtitle: Text(
-                                a.type == 'GOLD'
-                                    ? '${a.quantity} g @ ₹${a.purchasePrice}/g'
-                                    : '${a.quantity} units',
-                              ),
-                              trailing: Column(
-                                crossAxisAlignment:
-                                    CrossAxisAlignment.end,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    '₹${invested.toStringAsFixed(0)}',
-                                    style: const TextStyle(
-                                        fontWeight:
-                                            FontWeight.bold),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  _lockIcon(a),
-                                ],
-                              ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                _percentageBar(
+                                  percentage,
+                                  _typeColor(entry.key),
+                                ),
+                              ],
                             ),
-                          );
+                          ),
+                          ...entry.value.map((a) {
+                            final invested = _assetValue(a);
 
-                          return _isDeletable(a)
-                              ? Dismissible(
-                                  key: ValueKey(a.id),
-                                  direction:
-                                      DismissDirection
-                                          .endToStart,
-                                  background: Container(
-                                    color: Colors.red,
-                                    alignment:
-                                        Alignment.centerRight,
-                                    padding:
-                                        const EdgeInsets
-                                            .symmetric(
-                                                horizontal:
-                                                    20),
-                                    child: const Icon(
-                                        Icons.delete,
-                                        color:
-                                            Colors.white),
-                                  ),
-                                  onDismissed: (_) =>
-                                      _deleteAsset(a),
-                                  child: tile,
-                                )
-                              : tile;
-                        }),
-                      ],
-                    );
-                  }).toList(),
+                            final tile = Card(
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 4),
+                              child: ListTile(
+                                title: Text(a.name),
+                                subtitle: Text(
+                                  a.type == 'GOLD'
+                                      ? '${a.quantity} g @ ₹${a.purchasePrice}/g'
+                                      : '${a.quantity} units',
+                                ),
+                                trailing: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '₹${invested.toStringAsFixed(0)}',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    _lockIcon(a),
+                                  ],
+                                ),
+                              ),
+                            );
+
+                            return _isDeletable(a)
+                                ? Dismissible(
+                                    key: ValueKey(a.id),
+                                    direction:
+                                        DismissDirection.endToStart,
+                                    background: Container(
+                                      color: Colors.red,
+                                      alignment: Alignment.centerRight,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 20),
+                                      child: const Icon(Icons.delete,
+                                          color: Colors.white),
+                                    ),
+                                    onDismissed: (_) => _deleteAsset(a),
+                                    child: tile,
+                                  )
+                                : tile;
+                          }),
+                        ],
+                      );
+                    }),
+
+                    // 🔹 COMPACT INSIGHTS ROW (ONLY ONE RECOMMENDATION ENTRY)
+                    InsightsRow(
+                      count: _recommendations.length,
+                      onTap: _showInsightsBottomSheet,
+                    ),
+                  ],
                 );
               },
             ),
@@ -371,6 +372,7 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
     );
   }
 }
+
 
 
 

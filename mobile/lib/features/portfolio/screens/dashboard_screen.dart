@@ -9,7 +9,7 @@ import 'portfolio_insights_screen.dart';
 import 'fixed_income_maturity_screen.dart';
 
 import '../../accounts/screens/connected_accounts_screen.dart';
-import '../../integrations/screens/connected_providers_screen.dart'; // ✅ V3.3
+import '../../integrations/screens/connected_providers_screen.dart';
 import '../../notifications/screens/notifications_screen.dart';
 import '../../notifications/services/notifications_api.dart';
 import '../../shared/widgets/notification_badge.dart';
@@ -18,14 +18,12 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() =>
-      _DashboardScreenState();
+  State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late Future<Map<String, dynamic>> _summary;
   late Future<List<dynamic>> _maturities;
-  late Future<List<dynamic>> _recommendations;
   late Future<int> _unreadCount;
 
   @override
@@ -37,7 +35,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _refreshAll() {
     _summary = PortfolioApi.getSummary();
     _maturities = PortfolioApi.getMaturities();
-    _recommendations = PortfolioApi.getRecommendations();
     _unreadCount = NotificationsApi.getUnreadCount();
   }
 
@@ -55,9 +52,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   List<dynamic> _dueSoon(List<dynamic> items) {
-    return items
-        .where((m) => m['status'] == 'DUE_SOON')
-        .toList();
+    return items.where((m) => m['status'] == 'DUE_SOON').toList();
+  }
+
+  void _openInsights() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const PortfolioInsightsScreen(),
+      ),
+    );
   }
 
   @override
@@ -66,7 +70,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         title: const Text('My Portfolio'),
         actions: [
-          /// 🔔 NOTIFICATIONS (V2.2)
+          /// 🔔 Notifications
           FutureBuilder<int>(
             future: _unreadCount,
             builder: (context, snapshot) {
@@ -78,21 +82,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                          const NotificationsScreen(),
+                      builder: (_) => const NotificationsScreen(),
                     ),
                   );
-
                   setState(() {
-                    _unreadCount =
-                        NotificationsApi.getUnreadCount();
+                    _unreadCount = NotificationsApi.getUnreadCount();
                   });
                 },
               );
             },
           ),
 
-          /// 🔗 CONNECTED PROVIDERS (V3.3)
+          /// 🔗 Connected Providers
           IconButton(
             icon: const Icon(Icons.hub),
             tooltip: 'Connected Providers',
@@ -100,14 +101,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      const ConnectedProvidersScreen(),
+                  builder: (_) => const ConnectedProvidersScreen(),
                 ),
               );
             },
           ),
 
-          /// 🔗 CONNECTED ACCOUNTS (V2.1)
+          /// 🔗 Connected Accounts
           IconButton(
             icon: const Icon(Icons.link),
             tooltip: 'Connected Accounts',
@@ -115,29 +115,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      const ConnectedAccountsScreen(),
+                  builder: (_) => const ConnectedAccountsScreen(),
                 ),
               );
             },
           ),
 
-          /// 📊 RISK & DIVERSIFICATION
+          /// 📊 Insights (explicit navigation, not inline)
           IconButton(
             icon: const Icon(Icons.insights),
-            tooltip: 'Risk & Diversification',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      const PortfolioInsightsScreen(),
-                ),
-              );
-            },
+            tooltip: 'Insights',
+            onPressed: _openInsights,
           ),
 
-          /// 📅 FD MATURITIES
+          /// 📅 FD Maturities
           IconButton(
             icon: const Icon(Icons.event),
             tooltip: 'FD Maturities',
@@ -145,14 +136,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      const FixedIncomeMaturityScreen(),
+                  builder: (_) => const FixedIncomeMaturityScreen(),
                 ),
               );
             },
           ),
 
-          /// 🔄 REFRESH
+          /// 🔄 Refresh
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
@@ -160,7 +150,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
 
-          /// 🚪 LOGOUT
+          /// 🚪 Logout
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _logout,
@@ -180,17 +170,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               if (dueSoon.isEmpty) return const SizedBox();
 
               return Card(
-                margin:
-                    const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: const [
                           Text(
                             'Upcoming Fixed Deposits',
@@ -199,28 +186,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          Icon(Icons.warning,
-                              color: Colors.orange),
+                          Icon(Icons.warning, color: Colors.orange),
                         ],
                       ),
                       const SizedBox(height: 8),
                       ...dueSoon.map(
                         (m) => Padding(
-                          padding:
-                              const EdgeInsets.symmetric(
-                                  vertical: 4),
+                          padding: const EdgeInsets.symmetric(vertical: 4),
                           child: Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment
-                                    .spaceBetween,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(m['name']),
                               Text(
                                 '${m['daysRemaining']} days',
                                 style: const TextStyle(
                                   color: Colors.orange,
-                                  fontWeight:
-                                      FontWeight.w600,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
@@ -234,68 +215,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
 
-          /// 🔹 ACTIONABLE RECOMMENDATIONS
-          FutureBuilder<List<dynamic>>(
-            future: _recommendations,
-            builder: (context, snapshot) {
-              if (!snapshot.hasData ||
-                  snapshot.data!.isEmpty) {
-                return const SizedBox();
-              }
-
-              return Card(
-                margin:
-                    const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Recommended Actions',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ...snapshot.data!.map(
-                        (r) => ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(
-                            Icons.lightbulb,
-                            color: r['severity'] == 'HIGH'
-                                ? Colors.red
-                                : Colors.orange,
-                          ),
-                          title: Text(r['action']),
-                          subtitle:
-                              Text(r['recommendation']),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-
           /// 🔹 SUMMARY
           FutureBuilder<Map<String, dynamic>>(
             future: _summary,
             builder: (context, snapshot) {
-              if (snapshot.connectionState ==
-                  ConnectionState.waiting) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Padding(
                   padding: EdgeInsets.all(16),
                   child: LinearProgressIndicator(),
                 );
               }
 
-              if (!snapshot.hasData) {
-                return const SizedBox();
-              }
+              if (!snapshot.hasData) return const SizedBox();
 
               final s = snapshot.data!;
               return Card(
@@ -303,13 +234,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
-                    mainAxisAlignment:
-                        MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      _metric(
-                          'Invested', s['investedValue']),
-                      _metric(
-                          'Current', s['currentValue']),
+                      _metric('Invested', s['investedValue']),
+                      _metric('Current', s['currentValue']),
                       _metric('P/L', s['pnl']),
                     ],
                   ),
@@ -318,7 +246,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
 
-          /// 🔹 PORTFOLIO LIST
+          /// 🔹 PORTFOLIO LIST (MAIN CONTENT)
           Expanded(
             child: PortfolioListScreen(
               onChanged: () {
@@ -347,6 +275,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 }
+
 
 
 
