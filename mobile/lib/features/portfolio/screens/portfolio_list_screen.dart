@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../models/asset.dart'; // includes AssetSource
+
+import '../models/asset.dart';
 import '../services/portfolio_api.dart';
 import 'add_asset_screen.dart';
+import 'portfolio_insights_screen.dart';
+
 import '../../../widgets/insights_row.dart';
 
 class PortfolioListScreen extends StatefulWidget {
@@ -21,17 +24,8 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
 
   Asset? _lastDeleted;
 
-  // TEMP: stubbed recommendations (wire API later)
-  final List<Map<String, dynamic>> _recommendations = [
-    {
-      'title': 'Rebalance equity allocation',
-      'description': 'Equity exposure is above target allocation.',
-    },
-    {
-      'title': 'FD maturing soon',
-      'description': 'One fixed deposit matures in the next 30 days.',
-    },
-  ];
+  // TEMP: surfaced insight count only (details in Risk screen)
+  final int _insightCount = 2;
 
   @override
   void initState() {
@@ -72,9 +66,7 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
   }
 
   /// 🔑 DELETE RULE: ONLY MANUAL ASSETS
-  bool _isDeletable(Asset a) {
-    return a.source == AssetSource.MANUAL;
-  }
+  bool _isDeletable(Asset a) => a.source == AssetSource.MANUAL;
 
   /// 🔒 LOCK ICON FOR NON-DELETABLE ASSETS
   Widget _lockIcon(Asset a) {
@@ -199,37 +191,16 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
       ),
     );
   }
-//--
- void _showInsightsBottomSheet() {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (_) {
-      return SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            // ❌ No title here — avoid duplication
-            ..._recommendations.map(
-              (r) => Card(
-                child: ListTile(
-                  leading: const Icon(Icons.trending_up),
-                  title: Text(r['title'] ?? 'Insight'),
-                  subtitle: Text(r['description'] ?? ''),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
 
-//----
+  void _openInsights() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const PortfolioInsightsScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -264,12 +235,11 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
 
                 return ListView(
                   children: [
-                    // 🔹 ASSETS FIRST
                     ...grouped.entries.map((entry) {
                       final sectionValue = _sectionTotal(entry.value);
-                      final double percentage = totalPortfolio == 0
+                      final percentage = totalPortfolio == 0
                           ? 0.0
-                          : (sectionValue / totalPortfolio * 100).toDouble();
+                          : (sectionValue / totalPortfolio * 100);
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -357,10 +327,10 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
                       );
                     }),
 
-                    // 🔹 COMPACT INSIGHTS ROW (ONLY ONE RECOMMENDATION ENTRY)
+                    /// 🔹 INSIGHTS SURFACE (NO GATE HERE)
                     InsightsRow(
-                      count: _recommendations.length,
-                      onTap: _showInsightsBottomSheet,
+                      count: _insightCount,
+                      onTap: _openInsights,
                     ),
                   ],
                 );

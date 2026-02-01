@@ -23,7 +23,6 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   late Future<Map<String, dynamic>> _summary;
-  late Future<List<dynamic>> _maturities;
   late Future<int> _unreadCount;
 
   @override
@@ -34,7 +33,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _refreshAll() {
     _summary = PortfolioApi.getSummary();
-    _maturities = PortfolioApi.getMaturities();
     _unreadCount = NotificationsApi.getUnreadCount();
   }
 
@@ -44,23 +42,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(
-        builder: (_) => const MobileInputScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const MobileInputScreen()),
       (_) => false,
     );
-  }
-
-  List<dynamic> _dueSoon(List<dynamic> items) {
-    return items.where((m) => m['status'] == 'DUE_SOON').toList();
   }
 
   void _openInsights() {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const PortfolioInsightsScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const PortfolioInsightsScreen()),
     );
   }
 
@@ -68,7 +58,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        
         title: const Text('My Portfolio'),
         actions: [
           /// 🔔 Notifications
@@ -76,7 +65,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             future: _unreadCount,
             builder: (context, snapshot) {
               final count = snapshot.data ?? 0;
-
               return NotificationBadge(
                 count: count,
                 onTap: () async {
@@ -122,14 +110,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
           ),
 
-          /// 📊 Insights (explicit navigation, not inline)
+          /// 📊 Insights
           IconButton(
             icon: const Icon(Icons.insights),
             tooltip: 'Insights',
             onPressed: _openInsights,
           ),
 
-          /// 📅 FD Maturities
+          /// 📅 FD Maturities (separate screen)
           IconButton(
             icon: const Icon(Icons.event),
             tooltip: 'FD Maturities',
@@ -161,93 +149,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       body: Column(
         children: [
-          /// 🔹 UPCOMING FD MATURITIES
-          FutureBuilder<List<dynamic>>(
-            future: _maturities,
-            builder: (context, snapshot) {
-              if (!snapshot.hasData) return const SizedBox();
-
-              final dueSoon = _dueSoon(snapshot.data!);
-              if (dueSoon.isEmpty) return const SizedBox();
-
-              return Card(
-                margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: const [
-                          Text(
-                            'Upcoming Fixed Deposits',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Icon(Icons.warning, color: Colors.orange),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ...dueSoon.map(
-                        (m) => Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(m['name']),
-                              Text(
-                                '${m['daysRemaining']} days',
-                                style: const TextStyle(
-                                  color: Colors.orange,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-
-          /// 🔹 SUMMARY
+          /// 🔹 COMPACT SUMMARY ROW (1 LINE)
           FutureBuilder<Map<String, dynamic>>(
             future: _summary,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: LinearProgressIndicator(),
-                );
-              }
-
               if (!snapshot.hasData) return const SizedBox();
 
               final s = snapshot.data!;
-              return Card(
-                margin: const EdgeInsets.all(16),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _metric('Invested', s['investedValue']),
-                      _metric('Current', s['currentValue']),
-                      _metric('P/L', s['pnl']),
-                    ],
-                  ),
+              return Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _compactMetric('Invested', s['investedValue']),
+                    _compactMetric('Current', s['currentValue']),
+                    _compactMetric('P/L', s['pnl']),
+                  ],
                 ),
               );
             },
           ),
 
-          /// 🔹 PORTFOLIO LIST (MAIN CONTENT)
+          /// 🔹 PORTFOLIO LIST (PRIMARY CONTENT)
           Expanded(
             child: PortfolioListScreen(
               onChanged: () {
@@ -260,15 +184,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _metric(String label, dynamic value) {
+  /// Compact metric used in summary row
+  Widget _compactMetric(String label, dynamic value) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 11, color: Colors.grey),
+        ),
+        const SizedBox(height: 2),
         Text(
           '₹${(value as num).toStringAsFixed(0)}',
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -276,9 +205,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 }
-
-
-
 
 
 
