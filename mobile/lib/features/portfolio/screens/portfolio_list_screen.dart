@@ -6,8 +6,6 @@ import '../services/portfolio_api.dart';
 import 'add_asset_screen.dart';
 import 'portfolio_insights_screen.dart';
 
-import '../../../widgets/insights_row.dart';
-
 class PortfolioListScreen extends StatefulWidget {
   final VoidCallback onChanged;
 
@@ -23,9 +21,6 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
   DateTime _lastUpdated = DateTime.now();
 
   Asset? _lastDeleted;
-
-  // TEMP: surfaced insight count only (details in Risk screen)
-  final int _insightCount = 2;
 
   @override
   void initState() {
@@ -65,10 +60,8 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
     });
   }
 
-  /// 🔑 DELETE RULE: ONLY MANUAL ASSETS
   bool _isDeletable(Asset a) => a.source == AssetSource.MANUAL;
 
-  /// 🔒 LOCK ICON FOR NON-DELETABLE ASSETS
   Widget _lockIcon(Asset a) {
     if (_isDeletable(a)) return const SizedBox.shrink();
 
@@ -188,15 +181,6 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
         minHeight: 8,
         backgroundColor: Colors.grey.shade300,
         valueColor: AlwaysStoppedAnimation(color),
-      ),
-    );
-  }
-
-  void _openInsights() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const PortfolioInsightsScreen(),
       ),
     );
   }
@@ -326,12 +310,6 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
                         ],
                       );
                     }),
-
-                    /// 🔹 INSIGHTS SURFACE (NO GATE HERE)
-                    InsightsRow(
-                      count: _insightCount,
-                      onTap: _openInsights,
-                    ),
                   ],
                 );
               },
