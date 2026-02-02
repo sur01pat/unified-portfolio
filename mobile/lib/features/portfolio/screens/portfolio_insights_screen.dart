@@ -28,7 +28,7 @@ class PortfolioInsightsScreen extends StatelessWidget {
             );
           }
 
-          if (!snapshot.hasData) {
+          if (!snapshot.hasData || snapshot.data == null) {
             return const Center(
               child: Text('No analysis available'),
             );
@@ -41,15 +41,15 @@ class PortfolioInsightsScreen extends StatelessWidget {
             children: [
               _section(
                 'Asset Allocation (%)',
-                Map<String, dynamic>.from(data['allocation']),
+                Map<String, dynamic>.from(data['allocation'] ?? {}),
               ),
               _section(
                 'Country Exposure (%)',
-                Map<String, dynamic>.from(data['countryExposure']),
+                Map<String, dynamic>.from(data['countryExposure'] ?? {}),
               ),
               _section(
                 'Sector Exposure (%)',
-                Map<String, dynamic>.from(data['sectorExposure']),
+                Map<String, dynamic>.from(data['sectorExposure'] ?? {}),
               ),
               const SizedBox(height: 16),
               const Text(
@@ -60,7 +60,7 @@ class PortfolioInsightsScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              ...List<String>.from(data['warnings']).map(
+              ...List<String>.from(data['warnings'] ?? []).map(
                 (w) => ListTile(
                   leading: const Icon(
                     Icons.warning,
@@ -77,6 +77,10 @@ class PortfolioInsightsScreen extends StatelessWidget {
   }
 
   Widget _section(String title, Map<String, dynamic> values) {
+    if (values.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -99,5 +103,3 @@ class PortfolioInsightsScreen extends StatelessWidget {
     );
   }
 }
-
-
