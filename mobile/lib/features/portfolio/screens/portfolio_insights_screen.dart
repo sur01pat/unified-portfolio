@@ -4,8 +4,20 @@ import '../services/portfolio_api.dart';
 class PortfolioInsightsScreen extends StatelessWidget {
   const PortfolioInsightsScreen({super.key});
 
+  // TEMP: premium flag (replace with RevenueCat later)
+  static const bool isPremiumUser = false;
+
   @override
   Widget build(BuildContext context) {
+    if (!isPremiumUser) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Risk & Diversification'),
+        ),
+        body: _lockedView(context),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Risk & Diversification'),
@@ -14,9 +26,7 @@ class PortfolioInsightsScreen extends StatelessWidget {
         future: PortfolioApi.getAnalysis(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
@@ -29,9 +39,7 @@ class PortfolioInsightsScreen extends StatelessWidget {
           }
 
           if (!snapshot.hasData || snapshot.data == null) {
-            return const Center(
-              child: Text('No analysis available'),
-            );
+            return const Center(child: Text('No analysis available'));
           }
 
           final data = snapshot.data!;
@@ -51,24 +59,24 @@ class PortfolioInsightsScreen extends StatelessWidget {
                 'Sector Exposure (%)',
                 Map<String, dynamic>.from(data['sectorExposure'] ?? {}),
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Warnings',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              ...List<String>.from(data['warnings'] ?? []).map(
-                (w) => ListTile(
-                  leading: const Icon(
-                    Icons.warning,
-                    color: Colors.orange,
+              if ((data['warnings'] as List?)?.isNotEmpty ?? false) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Warnings',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
                   ),
-                  title: Text(w),
                 ),
-              ),
+                const SizedBox(height: 8),
+                ...List<String>.from(data['warnings']).map(
+                  (w) => ListTile(
+                    leading:
+                        const Icon(Icons.warning, color: Colors.orange),
+                    title: Text(w),
+                  ),
+                ),
+              ],
             ],
           );
         },
@@ -76,10 +84,39 @@ class PortfolioInsightsScreen extends StatelessWidget {
     );
   }
 
+  Widget _lockedView(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock, size: 48, color: Colors.grey),
+            const SizedBox(height: 16),
+            const Text(
+              'Premium Feature',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Risk & diversification insights are available for premium users.',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () {
+                // TODO: navigate to paywall
+              },
+              child: const Text('Upgrade to Premium'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _section(String title, Map<String, dynamic> values) {
-    if (values.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    if (values.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,3 +140,4 @@ class PortfolioInsightsScreen extends StatelessWidget {
     );
   }
 }
+
