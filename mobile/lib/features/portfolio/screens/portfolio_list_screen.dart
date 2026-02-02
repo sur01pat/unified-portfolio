@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import '../models/asset.dart';
 import '../services/portfolio_api.dart';
 import 'add_asset_screen.dart';
-import 'portfolio_insights_screen.dart';
 
 class PortfolioListScreen extends StatefulWidget {
   final VoidCallback onChanged;
@@ -31,10 +30,8 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
       widget.onChanged();
     });
 
-    _refreshTimer = Timer.periodic(
-      const Duration(seconds: 30),
-      (_) => _refresh(),
-    );
+    _refreshTimer =
+        Timer.periodic(const Duration(seconds: 30), (_) => _refresh());
   }
 
   @override
@@ -60,7 +57,10 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
     });
   }
 
-  bool _isDeletable(Asset a) => a.source == AssetSource.MANUAL;
+  /// ✅ Manual assets are deletable if source is NULL or MANUAL
+  bool _isDeletable(Asset a) {
+    return a.source == null || a.source == AssetSource.MANUAL;
+  }
 
   Widget _lockIcon(Asset a) {
     if (_isDeletable(a)) return const SizedBox.shrink();
@@ -85,12 +85,11 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
     _refresh();
   }
 
-  Future<void> _deleteAsset(Asset asset) async {
+  Future<bool> _confirmDelete(Asset asset) async {
     _lastDeleted = asset;
     await PortfolioApi.deleteAsset(asset.id);
-    _refresh();
 
-    if (!mounted) return;
+    if (!mounted) return false;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -101,6 +100,9 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
         ),
       ),
     );
+
+    _refresh();
+    return true;
   }
 
   Future<void> _undoDelete() async {
@@ -117,7 +119,7 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
       'currency': a.currency,
       'country': a.country,
       'sector': a.sector,
-      'source': a.source?.name,
+      'source': 'MANUAL',
     });
 
     _refresh();
@@ -188,10 +190,8 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addAsset,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton:
+          FloatingActionButton(onPressed: _addAsset, child: const Icon(Icons.add)),
       body: Column(
         children: [
           Padding(
@@ -218,99 +218,94 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
                 final grouped = _groupByType(assets);
 
                 return ListView(
-                  children: [
-                    ...grouped.entries.map((entry) {
-                      final sectionValue = _sectionTotal(entry.value);
-                      final percentage = totalPortfolio == 0
-                          ? 0.0
-                          : (sectionValue / totalPortfolio * 100);
+                  children: grouped.entries.expand((entry) {
+                    final sectionValue = _sectionTotal(entry.value);
+                    final percentage = totalPortfolio == 0
+                        ? 0.0
+                        : (sectionValue / totalPortfolio * 100);
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                    return [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
                               children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      _typeLabel(entry.key),
-                                      style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    Text(
-                                      '₹${sectionValue.toStringAsFixed(0)} '
-                                      '(${percentage.toStringAsFixed(0)}%)',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                  ],
+                                Text(
+                                  _typeLabel(entry.key),
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
                                 ),
-                                const SizedBox(height: 6),
-                                _percentageBar(
-                                  percentage,
-                                  _typeColor(entry.key),
+                                Text(
+                                  '₹${sectionValue.toStringAsFixed(0)} '
+                                  '(${percentage.toStringAsFixed(0)}%)',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600),
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 6),
+                            _percentageBar(
+                              percentage,
+                              _typeColor(entry.key),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ...entry.value.map((a) {
+                        final invested = _assetValue(a);
+
+                        final tile = Card(
+                          margin: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
+                          child: ListTile(
+                            title: Text(a.name),
+                            subtitle: Text(
+                              a.type == 'GOLD'
+                                  ? '${a.quantity} g @ ₹${a.purchasePrice}/g'
+                                  : '${a.quantity} units',
+                            ),
+                            trailing: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '₹${invested.toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 4),
+                                _lockIcon(a),
+                              ],
+                            ),
                           ),
-                          ...entry.value.map((a) {
-                            final invested = _assetValue(a);
+                        );
 
-                            final tile = Card(
-                              margin: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 4),
-                              child: ListTile(
-                                title: Text(a.name),
-                                subtitle: Text(
-                                  a.type == 'GOLD'
-                                      ? '${a.quantity} g @ ₹${a.purchasePrice}/g'
-                                      : '${a.quantity} units',
+                        return _isDeletable(a)
+                            ? Dismissible(
+                                key: ValueKey(a.id),
+                                direction: DismissDirection.endToStart,
+                                confirmDismiss: (_) =>
+                                    _confirmDelete(a),
+                                background: Container(
+                                  color: Colors.red,
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20),
+                                  child: const Icon(Icons.delete,
+                                      color: Colors.white),
                                 ),
-                                trailing: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      '₹${invested.toStringAsFixed(0)}',
-                                      style: const TextStyle(
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    _lockIcon(a),
-                                  ],
-                                ),
-                              ),
-                            );
-
-                            return _isDeletable(a)
-                                ? Dismissible(
-                                    key: ValueKey(a.id),
-                                    direction:
-                                        DismissDirection.endToStart,
-                                    background: Container(
-                                      color: Colors.red,
-                                      alignment: Alignment.centerRight,
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 20),
-                                      child: const Icon(Icons.delete,
-                                          color: Colors.white),
-                                    ),
-                                    onDismissed: (_) => _deleteAsset(a),
-                                    child: tile,
-                                  )
-                                : tile;
-                          }),
-                        ],
-                      );
-                    }),
-                  ],
+                                child: tile,
+                              )
+                            : tile;
+                      }),
+                    ];
+                  }).toList(),
                 );
               },
             ),
