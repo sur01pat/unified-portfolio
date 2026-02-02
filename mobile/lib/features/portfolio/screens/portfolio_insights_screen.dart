@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import '../services/portfolio_api.dart';
 
+/// NOTE:
+/// Premium gating is intentionally UI-only for now.
+/// TODO(RevenueCat):
+/// - Integrate RevenueCat paywall here for Play Store release builds
+/// - Enforce premium access only in kReleaseMode
+/// - Do NOT bypass gating in release builds
 class PortfolioInsightsScreen extends StatelessWidget {
   const PortfolioInsightsScreen({super.key});
 
@@ -105,7 +111,15 @@ class PortfolioInsightsScreen extends StatelessWidget {
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {
-                // TODO: navigate to paywall
+                // 🔒 PREMIUM PAYWALL PLACEHOLDER
+                // TODO(RevenueCat):
+                // - Launch RevenueCat paywall here
+                // - Enforce premium only in Play Store (kReleaseMode)
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Premium upgrade coming soon'),
+                  ),
+                );
               },
               child: const Text('Upgrade to Premium'),
             ),
@@ -140,4 +154,5 @@ class PortfolioInsightsScreen extends StatelessWidget {
     );
   }
 }
+
 
