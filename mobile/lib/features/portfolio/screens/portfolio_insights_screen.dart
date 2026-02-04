@@ -1,55 +1,116 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../services/portfolio_api.dart';
+import '../../premium/revenuecat_service.dart';
 
-/// NOTE:
-/// Premium gating is intentionally UI-only for now.
-/// TODO(RevenueCat):
-/// - Integrate RevenueCat paywall here for Play Store release builds
-/// - Enforce premium access only in kReleaseMode
-/// - Do NOT bypass gating in release builds
-class PortfolioInsightsScreen extends StatelessWidget {
+class PortfolioInsightsScreen extends StatefulWidget {
   const PortfolioInsightsScreen({super.key});
 
-  // TEMP: premium flag (replace with RevenueCat later)
-  static const bool isPremiumUser = false;
+  @override
+  State<PortfolioInsightsScreen> createState() =>
+      _PortfolioInsightsScreenState();
+}
+
+class _PortfolioInsightsScreenState extends State<PortfolioInsightsScreen> {
+  bool _loading = true;
+  bool _isPremium = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkPremium();
+  }
+
+  Future<void> _checkPremium() async {
+    if (!kReleaseMode) {
+      // 🚫 Debug/dev builds: treat as non-premium
+      setState(() {
+        _isPremium = false;
+        _loading = false;
+      });
+      return;
+    }
+
+    final premium = await RevenueCatService.isPremium();
+    setState(() {
+      _isPremium = premium;
+      _loading = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (!isPremiumUser) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Risk & Diversification'),
-        ),
-        body: _lockedView(context),
+    if (_loading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
+    // ✅ Already premium → DIRECT access
+    if (_isPremium) {
+      return _insightsView();
+    }
+
+    // 🔒 First-time / non-premium → locked view
+    return _lockedView();
+  }
+
+  /// 🔒 Locked screen (ONLY for non-premium users)
+  Widget _lockedView() {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Risk & Diversification'),
+      appBar: AppBar(title: const Text('Risk & Diversification')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'Premium Feature',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Risk & diversification insights are available for premium users.',
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+
+              /// 💳 Upgrade ONLY for first-time users
+              ElevatedButton(
+                onPressed: () async {
+                  try {
+                    await RevenueCatService.showPaywall();
+                  } catch (_) {
+                    // Ignore "already subscribed" etc
+                  } finally {
+                    // 🔁 Re-check entitlement after purchase
+                    await _checkPremium();
+                  }
+                },
+                child: const Text('Upgrade to Premium'),
+              ),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+
+  /// 📊 Premium insights view
+  Widget _insightsView() {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Risk & Diversification')),
       body: FutureBuilder<Map<String, dynamic>>(
         future: PortfolioApi.getAnalysis(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Error: ${snapshot.error}',
-                style: const TextStyle(color: Colors.red),
-              ),
-            );
-          }
-
-          if (!snapshot.hasData || snapshot.data == null) {
-            return const Center(child: Text('No analysis available'));
-          }
-
           final data = snapshot.data!;
-
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -65,66 +126,9 @@ class PortfolioInsightsScreen extends StatelessWidget {
                 'Sector Exposure (%)',
                 Map<String, dynamic>.from(data['sectorExposure'] ?? {}),
               ),
-              if ((data['warnings'] as List?)?.isNotEmpty ?? false) ...[
-                const SizedBox(height: 16),
-                const Text(
-                  'Warnings',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ...List<String>.from(data['warnings']).map(
-                  (w) => ListTile(
-                    leading:
-                        const Icon(Icons.warning, color: Colors.orange),
-                    title: Text(w),
-                  ),
-                ),
-              ],
             ],
           );
         },
-      ),
-    );
-  }
-
-  Widget _lockedView(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.lock, size: 48, color: Colors.grey),
-            const SizedBox(height: 16),
-            const Text(
-              'Premium Feature',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Risk & diversification insights are available for premium users.',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                // 🔒 PREMIUM PAYWALL PLACEHOLDER
-                // TODO(RevenueCat):
-                // - Launch RevenueCat paywall here
-                // - Enforce premium only in Play Store (kReleaseMode)
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Premium upgrade coming soon'),
-                  ),
-                );
-              },
-              child: const Text('Upgrade to Premium'),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -137,10 +141,8 @@ class PortfolioInsightsScreen extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style:
+              const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         ...values.entries.map(
@@ -154,5 +156,11 @@ class PortfolioInsightsScreen extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
 
 
