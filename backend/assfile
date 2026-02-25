@@ -1,0 +1,90 @@
+[
+  {
+    "id": "a1",
+    "type": "STOCK",
+    "name": "Apple",
+    "quantity": 10,
+    "purchasePrice": 180,
+    "currency": "USD",
+    "country": "US",
+    "sector": "Technology",
+    "source": "BROKER"
+  },
+  {
+    "id": "a2",
+    "type": "STOCK",
+    "name": "Microsoft",
+    "quantity": 8,
+    "purchasePrice": 330,
+    "currency": "USD",
+    "country": "US",
+    "sector": "Technology",
+    "source": "BROKER"
+  },
+  {
+    "id": "a3",
+    "type": "STOCK",
+    "name": "HDFC Bank",
+    "quantity": 50,
+    "purchasePrice": 1500,
+    "currency": "INR",
+    "country": "India",
+    "sector": "Banking",
+    "source": "BROKER"
+  },
+  {
+    "id": "a4",
+    "type": "GOLD",
+    "name": "Physical Gold",
+    "quantity": 100,
+    "purchasePrice": 6200,
+    "currency": "INR",
+    "country": "India",
+    "sector": "Commodities",
+    "source": "MANUAL"
+  },
+  {
+    "id": "a5",
+    "type": "CASH",
+    "name": "Savings Account",
+    "quantity": 500000,
+    "purchasePrice": 1,
+    "currency": "INR",
+    "country": "India",
+    "sector": "Cash",
+    "source": "MANUAL"
+  },
+  {
+    "id": "a6",
+    "type": "REAL_ESTATE",
+    "name": "Apartment",
+    "quantity": 1,
+    "purchasePrice": 8000000,
+    "currency": "INR",
+    "country": "India",
+    "sector": "Real Estate",
+    "source": "MANUAL"
+  },
+  {
+    "id": "a7",
+    "type": "FIXED_INCOME",
+    "name": "ICICI Bank FD",
+    "quantity": 1,
+    "purchasePrice": 500000,
+    "currency": "INR",
+    "country": "India",
+    "sector": "Debt",
+    "source": "BANK"
+  },
+  {
+    "id": "a8",
+    "type": "FIXED_INCOME",
+    "name": "HDFC Bank FD",
+    "quantity": 1,
+    "purchasePrice": 300000,
+    "currency": "INR",
+    "country": "India",
+    "sector": "Debt",
+    "source": "BANK"
+  }
+]

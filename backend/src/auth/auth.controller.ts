@@ -18,7 +18,18 @@ export class AuthController {
     },
   })
   sendOtp(@Body() body: { mobileNumber: string }) {
+
+    // ✅ ADDED: capture OTP returned from service
+    const otp = this.authService.sendOtp(body.mobileNumber);
+
+    // ❌ original line kept as-is
     return this.authService.sendOtp(body.mobileNumber);
+
+    ///
+    return {
+    message: 'OTP sent',
+    otp: otp, // ✅ DEBUG ONLY - allows mobile app to display OTP
+  };
   }
 
   @Post('verify-otp')

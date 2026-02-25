@@ -21,6 +21,44 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
 
   Asset? _lastDeleted;
 
+  // ============================================================
+  // ✅ ADDED: Fake daily % change generator (UI only)
+  // ============================================================
+  double _mockPercentChange() {
+    return (DateTime.now().millisecond % 10 - 5).toDouble();
+  }
+
+  // ============================================================
+  // ✅ ADDED: Color based on gain/loss
+  // ============================================================
+  Color _changeColor(double pct) {
+    return pct >= 0 ? Colors.green : Colors.red;
+  }
+
+  // ============================================================
+  // ✅ ADDED: Small % widget with arrow
+  // ============================================================
+  Widget _percentWidget(double pct) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          pct >= 0 ? Icons.arrow_drop_up : Icons.arrow_drop_down,
+          color: _changeColor(pct),
+          size: 18,
+        ),
+        Text(
+          '${pct.abs().toStringAsFixed(1)}%',
+          style: TextStyle(
+            color: _changeColor(pct),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -242,7 +280,7 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
                                       fontWeight: FontWeight.bold),
                                 ),
                                 Text(
-                                  '₹${sectionValue.toStringAsFixed(0)} '
+                                  '\$${sectionValue.toStringAsFixed(0)} '
                                   '(${percentage.toStringAsFixed(0)}%)',
                                   style: const TextStyle(
                                       fontWeight: FontWeight.w600),
@@ -260,27 +298,45 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
                       ...entry.value.map((a) {
                         final invested = _assetValue(a);
 
+                        // ✅ ADDED
+                        final pctChange = _mockPercentChange();
+
                         final tile = Card(
                           margin: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 4),
                           child: ListTile(
-                            title: Text(a.name),
+                            title: Row(
+                              children: [
+                                Expanded(child: Text(a.name)),
+                                _lockIcon(a), // ✅ beside asset name
+                              ],
+                            ),
+
                             subtitle: Text(
                               a.type == 'GOLD'
-                                  ? '${a.quantity} g @ ₹${a.purchasePrice}/g'
-                                  : '${a.quantity} units',
+                                  ? '${a.quantity.toStringAsFixed(0)} g @ \$${a.purchasePrice.toStringAsFixed(0)}/g'
+                                  : a.type == 'STOCK'
+                                      ? '${a.quantity.toStringAsFixed(0)} shares @ \$${a.purchasePrice.toStringAsFixed(0)}'
+                                      : a.type == 'CASH'
+                                          ? '\$${(a.quantity * a.purchasePrice).toStringAsFixed(0)}'
+                                          : a.type == 'FIXED_INCOME'
+                                              ? '\$${(a.quantity * a.purchasePrice).toStringAsFixed(0)}'
+                                              : '${a.quantity.toStringAsFixed(0)} units',
                             ),
+
                             trailing: Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  '₹${invested.toStringAsFixed(0)}',
+                                  '\$${invested.toStringAsFixed(0)}',
                                   style: const TextStyle(
                                       fontWeight: FontWeight.bold),
                                 ),
-                                const SizedBox(height: 4),
-                                _lockIcon(a),
+
+                                // ✅ ADDED
+                                _percentWidget(pctChange),
                               ],
                             ),
                           ),
@@ -315,6 +371,8 @@ class _PortfolioListScreenState extends State<PortfolioListScreen> {
     );
   }
 }
+
+
 
 
 

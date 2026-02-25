@@ -19,7 +19,9 @@ class Asset {
   final String currency;
   final String? country;
   final String? sector;
+  final String? platform;      // ✅ ADD
   final AssetSource? source; // ✅ NEW
+  
 
   Asset({
     required this.id,
@@ -30,6 +32,7 @@ class Asset {
     required this.currency,
     this.country,
     this.sector,
+    this.platform,             // ✅ ADD
     this.source,
   });
 
@@ -44,6 +47,7 @@ class Asset {
       currency: json['currency'],
       country: json['country'],
       sector: json['sector'],
+      //platform: json['platform'],
       source: assetSourceFromJson(json['source']),
     );
   }

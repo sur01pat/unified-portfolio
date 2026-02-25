@@ -8,6 +8,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  purchases_flutter: ^9.10.8
+
   flutter_localizations:
     sdk: flutter
   http: ^1.2.1

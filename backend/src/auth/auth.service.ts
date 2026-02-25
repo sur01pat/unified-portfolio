@@ -19,7 +19,8 @@ export class AuthService {
 
     console.log(`OTP for ${mobileNumber}: ${otp}`);
 
-    return { success: true };
+    return { success: true,otp }; // ✅ DEBUG ONLY - expose OTP to mobile app
+
   }
 
   verifyOtp(mobileNumber: string, code: string) {

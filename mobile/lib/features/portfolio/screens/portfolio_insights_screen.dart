@@ -21,9 +21,9 @@ class _PortfolioInsightsScreenState extends State<PortfolioInsightsScreen> {
     _checkPremium();
   }
 
+  // 🔁 Always re-check entitlement from RevenueCat
   Future<void> _checkPremium() async {
     if (!kReleaseMode) {
-      // 🚫 Debug/dev builds: treat as non-premium
       setState(() {
         _isPremium = false;
         _loading = false;
@@ -31,11 +31,19 @@ class _PortfolioInsightsScreenState extends State<PortfolioInsightsScreen> {
       return;
     }
 
-    final premium = await RevenueCatService.isPremium();
-    setState(() {
-      _isPremium = premium;
-      _loading = false;
-    });
+    try {
+      final premium = await RevenueCatService.isPremium();
+
+      setState(() {
+        _isPremium = premium;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isPremium = false;
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -46,16 +54,17 @@ class _PortfolioInsightsScreenState extends State<PortfolioInsightsScreen> {
       );
     }
 
-    // ✅ Already premium → DIRECT access
+    // ✅ Premium users see insights directly
     if (_isPremium) {
       return _insightsView();
     }
 
-    // 🔒 First-time / non-premium → locked view
+    // 🔒 Non-premium users see upgrade screen
     return _lockedView();
   }
 
-  /// 🔒 Locked screen (ONLY for non-premium users)
+  // ================= LOCKED VIEW =================
+
   Widget _lockedView() {
     return Scaffold(
       appBar: AppBar(title: const Text('Risk & Diversification')),
@@ -78,16 +87,15 @@ class _PortfolioInsightsScreenState extends State<PortfolioInsightsScreen> {
               ),
               const SizedBox(height: 24),
 
-              /// 💳 Upgrade ONLY for first-time users
               ElevatedButton(
                 onPressed: () async {
+                  debugPrint("UPGRADE BUTTON PRESSED");
                   try {
                     await RevenueCatService.showPaywall();
                   } catch (_) {
-                    // Ignore "already subscribed" etc
+                    // ignore
                   } finally {
-                    // 🔁 Re-check entitlement after purchase
-                    await _checkPremium();
+                    await _checkPremium(); // re-evaluate
                   }
                 },
                 child: const Text('Upgrade to Premium'),
@@ -99,7 +107,8 @@ class _PortfolioInsightsScreenState extends State<PortfolioInsightsScreen> {
     );
   }
 
-  /// 📊 Premium insights view
+  // ================= INSIGHTS VIEW =================
+
   Widget _insightsView() {
     return Scaffold(
       appBar: AppBar(title: const Text('Risk & Diversification')),
@@ -111,6 +120,7 @@ class _PortfolioInsightsScreenState extends State<PortfolioInsightsScreen> {
           }
 
           final data = snapshot.data!;
+
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -133,6 +143,8 @@ class _PortfolioInsightsScreenState extends State<PortfolioInsightsScreen> {
     );
   }
 
+  // ================= COMMON =================
+
   Widget _section(String title, Map<String, dynamic> values) {
     if (values.isEmpty) return const SizedBox.shrink();
 
@@ -141,8 +153,7 @@ class _PortfolioInsightsScreenState extends State<PortfolioInsightsScreen> {
       children: [
         Text(
           title,
-          style:
-              const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         ...values.entries.map(
@@ -156,11 +167,3 @@ class _PortfolioInsightsScreenState extends State<PortfolioInsightsScreen> {
     );
   }
 }
-
-
-
-
-
-
-
-

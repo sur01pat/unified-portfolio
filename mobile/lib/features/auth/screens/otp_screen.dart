@@ -14,6 +14,19 @@ class OtpScreen extends StatefulWidget {
 
 class _OtpScreenState extends State<OtpScreen> {
   final TextEditingController _otpController = TextEditingController();
+
+// --------------------------------------------------
+// ADD THIS (auto-fill Test OTP if available)
+// --------------------------------------------------
+  @override
+  void initState() {
+    super.initState();
+    if (AuthApi.lastOtp != null) {
+      _otpController.text = AuthApi.lastOtp!;
+    }
+  }
+// --------------------------------------------------
+
 //------
 void _verifyOtp() async {
   final otp = _otpController.text.trim();
@@ -53,6 +66,21 @@ void _verifyOtp() async {
               'OTP sent to ${widget.mobileNumber}',
               style: const TextStyle(fontSize: 16),
             ),
+
+            // --------------------------------------------------
+            // ADD THIS (visible test OTP text)
+            // --------------------------------------------------
+            if (AuthApi.lastOtp != null)
+              Text(
+                'Test OTP: ${AuthApi.lastOtp}',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            // --------------------------------------------------
+
             const SizedBox(height: 16),
             TextField(
               controller: _otpController,
@@ -77,3 +105,4 @@ void _verifyOtp() async {
     );
   }
 }
+

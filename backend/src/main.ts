@@ -17,6 +17,8 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
 
   // 🔥 THIS IS THE FIX (bind to all interfaces)
-  await app.listen(3000, '0.0.0.0');
+  const port = process.env.PORT || 3000; // added for cloud run
+  await app.listen(port);
+  //await app.listen(3000, '0.0.0.0'); //laptop run
 }
 bootstrap();

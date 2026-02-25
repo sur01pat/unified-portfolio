@@ -195,7 +195,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         const SizedBox(height: 2),
         Text(
-          '₹${(value as num).toStringAsFixed(0)}',
+          //'₹${(value as num).toStringAsFixed(0)}',
+          //'₹${((value is num) ? value : 0).toStringAsFixed(0)}',// added to remove null type
+          '\$${((value is num) ? value : 0).toStringAsFixed(0)}',// added to remove null type
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
